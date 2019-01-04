@@ -1,0 +1,10 @@
+{
+  "domain": "https://sverigesradio.se",
+  "description": "Svensk Radio Lätt Svensk",
+  "urls": [
+    {
+      url: "https://sverigesradio.se/sida/artikel.aspx?programid=4916&artikel=7125997",
+      selectors: [".article-details__header", ".article-details__body"]
+    }
+  ]
+}

@@ -20,9 +20,10 @@ const fetchHTML = (url) => {
 const htmlDOMToVisibleText = (htmlDom, selector) => {
   return new Promise((result, reject) => {
     const doc = htmlDom.window.document;
+    const elements = selector ? doc.querySelectorAll(selector) : doc.childNodes;
     const texts = [];
 
-    domWalk(doc.childNodes, node => {
+    domWalk(elements, node => {
       if (textNodeFilter(node)) {
         texts.push({
           text: node.textContent.trim(),
