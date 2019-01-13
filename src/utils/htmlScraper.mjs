@@ -36,15 +36,14 @@ const htmlDOMToVisibleText = (htmlDom, selector) => {
   });
 };
 
-const htmlStringToVisibleText = (htmlString, selector) => {
+const scrapeTextFromHTMLString = (htmlString, selector) => {
   const dom = new JSDOM(htmlString);
 
   return htmlDOMToVisibleText(dom, selector);
 };
 
-
 export default {
   fetchHTML,
-  htmlStringToVisibleText,
+  scrapeTextFromHTMLString,
   htmlDOMToVisibleText
 };

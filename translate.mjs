@@ -1,31 +1,56 @@
 import program from 'commander';
-import html from './src/html.mjs';
-import processors from './src/processors.mjs';
+import scraper from './src/utils/htmlScraper.mjs';
+import commands from './src/commands/index.mjs';
+
+const commandsStr = Object.keys(commands).join(', ');
+
+process.on('uncaughtException', function (error) {
+  console.log(error.stack);
+});
 
 program
   .version('0.1.0')
-  .option('-u, --url [url]', 'Process the url provided')
-  .option('-f, --file [file]', 'Process the provided config JSON file. See kits/swedish for examples.')
-  .option('-p, --processor [processor]', 'Which processor to use, by default uses the word sort and count processor.', 'wordCountAndSort')
-  .option('-s, --selector [selector]', 'Provide a DOM selector for which nodes you want to process only.')
+  .option('-u, --url [url]', 'Scrap the html from the url provided and use the result as the input document.')
+  .option('-s, --domSelector [domSelector]', 'Provide a DOM selector for which nodes you want to scrape when using url input document(s).')
+  .option('-g, --config [config]', 'Set the document(s) to process to the provided config JSON file. See ./languages/swedish for examples.')
+  .option('-c, --command [command]', `Command to apply to the input document(s). Options: ${commandsStr}. Default is 'sortAndTranslate'.`, 'sortAndTranslate')
+  .option('-v, --verbose [verbose]', 'Output debugging information.', false)
   .parse(process.argv);
 
-const processor = processors[program.processor];
-
-if (!processor) {
-  console.log(`You have provided an invalid processor name '${program.processor}'`);
-  console.log('Must be one of:');
-  console.log(Object.keys(processors));
-
-  process.exit(1);
-}
+/**
+ * The basic concept of this program is that you have three major pieces:
+ *
+ * input: one or more sources that are converted into an array of strings.
+ * command: a command to be run on the input array of strings.
+ * config: optional configuration to be passed to the command.
+ *
+ * For example, you could input a url that would convert the HTML text to a single document for the input.
+ * Then the command could be 'sortAndTranslate' which would sort all the words into frequency of use and
+ * then translate each one, one by one.
+ */
+let input;
+let command;
+let config;
 
 if (program.url) {
-  console.log(`Fetching ${program.url}`);
-  console.log(`Filtering DOM to ${program.selector}`);
+  if (program.verbose) {
+    console.log(`Fetching ${program.url}`);
+    console.log(`Filtering DOM to ${program.selector}`);
+  }
 
-  html.fetchHTML(program.url)
-    .then(_html => html.htmlStringToVisibleText(_html, program.selector))
-    .then(nodes => processor({ texts: nodes.map(n => n.text), log: true }))
-    .catch(console.error);
+  input = () => scraper.fetchHTML(program.url)
+    .then(_html => scraper.scrapeTextFromHTMLString(_html, program.domSelector))
+    .then(nodes => nodes.map(n => n.text));
 }
+
+if (program.command) {
+  command = commands[program.command];
+
+  if (!command) {
+    console.warn(`WARNING: You have provided an invalid command name '${program.command}'`);
+  }
+}
+
+input()
+  .then(documents => command({ documents, config, log: true }))
+  .catch(console.error);
